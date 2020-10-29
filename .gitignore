@@ -1,0 +1,8 @@
+*mean.h5
+*tke.h5
+*movie.h5
+*out.*.h5
+slurm-*.out
+*.pyc
+*.swp
+__pycache__/*
