@@ -171,6 +171,7 @@ C Initialize flow.
         END IF
 
         CALL SAVE_STATS(.FALSE.)
+        CALL SAVE_FLOW(.FALSE.)
       end if
 
       RETURN

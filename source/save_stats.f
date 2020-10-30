@@ -534,10 +534,18 @@ C Apply Boundary conditions to velocity field
 #ifdef HDF5 
       if (MOVIE) then
          FNAME='movie.h5'
+
          if (USE_MPI) then
          call mpi_barrier(MPI_COMM_WORLD,ierror)
          end if
 !          CALL INTEGRATE_Z_VAR(TH(:,:,:,n),varxy,MPI_COMM_Z)
+         ! CHOR: included time variable here
+         gname='time'
+         call WriteHDF5_real(FNAME,gname,TIME)
+
+         if (USE_MPI) then
+         call mpi_barrier(MPI_COMM_WORLD,ierror)
+         end if
          IF (RANKZ.EQ.RANKZMOVIE) THEN
             do I=0,NXM
             do J=1,NY
@@ -547,6 +555,7 @@ C Apply Boundary conditions to velocity field
             GNAME='th'//CHAR(n+48)//'_xy'
             call writeHDF5_xyplane(FNAME,GNAME,varxy)
          END IF
+
          if (USE_MPI) then
          call mpi_barrier(MPI_COMM_WORLD,ierror)
          end if
@@ -559,6 +568,7 @@ C Apply Boundary conditions to velocity field
             GNAME='th'//CHAR(n+48)//'_xz'
             call writeHDF5_xzplane(FNAME,GNAME,varxz)
          END IF
+
          if (USE_MPI) then
          call mpi_barrier(MPI_COMM_WORLD,ierror)
          end if

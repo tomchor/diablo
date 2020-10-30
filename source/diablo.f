@@ -62,8 +62,6 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
 
 C A flag to determine if we are considering the first time-step
       FIRST_TIME=.TRUE.
-      CALL SAVE_STATS(.FALSE.)
-      CALL SAVE_FLOW(.FALSE.)
       DO TIME_STEP = TIME_STEP+1, TIME_STEP+N_TIME_STEPS
         IF (RANK.EQ.0) 
      &        WRITE(6,*) 'Now beginning TIME_STEP = ',TIME_STEP
