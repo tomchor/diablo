@@ -3,30 +3,17 @@ import h5py
 import xarray as xr
 import devilpy as dp
 
-N_hor = 64
-
 #------
 # Read files
 #flow = dp.input.read_flowfiles('.')
-run = dp.input.read_input('.')
+run = dp.input.read_grid()
 
-gridfile = h5py.File('grid.h5', 'r')
 movfile = h5py.File('movie.h5', 'r')
 mov = dp.input.hdf5tods(movfile)
 tkefile = h5py.File('tke.h5', 'r')
 #meanfile = h5py.File('mean.h5', 'r')
 #------
 
-#----
-# Set up grids
-grids = gridfile['grids']
-X_f = np.linspace(0, run.LX, N_hor+1)
-Z_f = np.linspace(0, run.LZ, N_hor+1)
-Y_f = grids['y'][:]
-
-X, Z = dp.utils.get_grid_centers(X_f, Z_f)
-Y = Y_f[:-1]
-#----
 
 mov = mov.assign_coords(X=X, Y=Y, Z=Z, label=range(len(mov.label)))
 
