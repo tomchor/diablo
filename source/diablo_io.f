@@ -159,9 +159,9 @@
           IF (RANK.EQ.0)
      &         write(*,*) 'Done reading flow'
 
-          IF (USE_MPI) THEN
-            CALL GHOST_CHAN_MPI
-          END IF
+!          IF (USE_MPI) THEN
+!            CALL GHOST_CHAN_MPI
+!          END IF
 
 ! Initialize flow.
           IF (RESET_TIME .OR. CREATE_NEW_FLOW) THEN
@@ -170,8 +170,18 @@
             TIME=0
           END IF
 
-          CALL SAVE_STATS(.FALSE.)
+!          CALL SAVE_STATS(.FALSE.)
         end if
+
+! Remove the divergence of the velocity field
+        CALL REM_DIV_CHAN
+
+        IF (USE_MPI) THEN
+          CALL GHOST_CHAN_MPI
+        END IF
+
+! Save various statistics to keep track of the initial condition
+        CALL SAVE_STATS_CHAN(.FALSE.)
 
         RETURN
       END

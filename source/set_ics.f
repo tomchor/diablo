@@ -1,6 +1,6 @@
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
       SUBROUTINE CREATE_FLOW_CHAN
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
         INCLUDE 'header'
 
 
@@ -9,7 +9,7 @@ C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
         REAL(kind=8) :: X0, X1, Y0, Y1, xcomp, vert_comp, V0
         INTEGER, DIMENSION(:), ALLOCATABLE :: seed
 
-C Initialize the random number generator
+! Initialize the random number generator
         CALL RANDOM_SEED(SIZE = K)
         Allocate (seed(1:K))
         do k=1,K
@@ -17,15 +17,15 @@ C Initialize the random number generator
         end do
         CALL RANDOM_SEED(PUT = seed)
 
-C UBULK0 and KICK should be set in input.dat
+! UBULK0 and KICK should be set in input.dat
 
-C IC_TYPE is set in input_chan.dat and can be used to easily
-C control which initial condition is used.  A few examples
-C are given here. These can be modified, or new types can be
-C added
+! IC_TYPE is set in input_chan.dat and can be used to easily
+! control which initial condition is used.  A few examples
+! are given here. These can be modified, or new types can be
+! added
 
         IF (IC_TYPE.eq.0) then
-C Parabolic profile for laminar closed channel flow
+! Parabolic profile for laminar closed channel flow
           DO J=0,NY
             DO K=0,NZP-1
               DO I=0,NXM
@@ -36,7 +36,7 @@ C Parabolic profile for laminar closed channel flow
             END DO
           END DO
         else if (IC_TYPE.eq.1) then
-C Laminar profile for open channel flow :
+! Laminar profile for open channel flow :
           DO K=0,NZP-1
             DO I=0,NXM
               DO J=1,NY
@@ -51,7 +51,7 @@ C Laminar profile for open channel flow :
             END DO
           END DO
         else if (IC_TYPE.eq.2) then
-C Linear profile for laminar Couette flow:
+! Linear profile for laminar Couette flow:
           DO J=0,NY
             DO K=0,NZP-1
               DO I=0,NXM
@@ -62,7 +62,7 @@ C Linear profile for laminar Couette flow:
             END DO
           END DO
         else if (IC_TYPE.eq.3) then
-C Tanh shear layer
+! Tanh shear layer
           DO J=0,NY
             DO K=0,NZP-1
               DO I=0,NXM
@@ -73,8 +73,8 @@ C Tanh shear layer
             END DO
           END DO
         else if (IC_TYPE.eq.4) then
-C For Front
-C Initialize in thermal wind balance:
+! For Front
+! Initialize in thermal wind balance:
           DO J=0,NY
             DO K=0,NZP-1
               DO I=0,NXM
@@ -84,6 +84,8 @@ C Initialize in thermal wind balance:
               END DO
             END DO
           END DO
+
+
         else if (IC_TYPE.eq.5) then
           X0 = LX/2
           X1 = 1600
@@ -104,10 +106,30 @@ C Initialize in thermal wind balance:
             END DO
           END DO
 
+
+        else if (IC_TYPE.eq.6) then
+          X0 = LX/2
+          X1 = 1600
+          Y0 = 0
+          Y1 = 80
+          V0 = 0.4d0
+          DO J=0,NY
+            vert_comp = EXP(-(GYF(J)-Y0)**2/Y1**2)
+            DO K=0,NZP-1
+              DO I=0,NXM
+        xcomp=exp(-(GZ(K)-5000)**2/X1**2) - exp(-(GZ(K)-11000)**2/X1**2)
+                U1(I,K,J) = V0 * vert_comp * xcomp
+                if(vert_comp>0.8.and.xcomp>.8)print*,"CHOR U",U1(I,K,J)
+                U2(I,K,J) = 0.d0
+                U3(I,K,J) = 0.d0
+              END DO
+            END DO
+          END DO
+
         else
           WRITE(*,*) 'WARNING, unsupported IC_TYPE in CREATE_FLOW'
         end if
-C Add random noise in physical space
+! Add random noise in physical space
         CALL RANDOM_NUMBER(RNUM1)
         CALL RANDOM_NUMBER(RNUM1)
         CALL RANDOM_NUMBER(RNUM1)
@@ -125,7 +147,7 @@ C Add random noise in physical space
           END DO
         END DO
 
-C Zero the ghost cells
+! Zero the ghost cells
         IF (.NOT.USE_MPI) THEN
           DO K=0,NZM
             DO I=0,NXM
@@ -139,57 +161,16 @@ C Zero the ghost cells
           END DO
         END IF
 
-C Convert to Fourier space
+! Convert to Fourier space
         CALL FFT_XZ_TO_FOURIER(U1,CU1,0,NY+1)
         CALL FFT_XZ_TO_FOURIER(U2,CU2,0,NY+1)
         CALL FFT_XZ_TO_FOURIER(U3,CU3,0,NY+1)
         CALL FFT_XZ_TO_FOURIER(P,CP,0,NY+1)
 
-! Optionally, add random noise in Fourier space instead
-!      DO I=0,NXP-1
-!        DO J=1,NY
-!          DO K=0,TNKZ
-C Now, give the velocity field a random perturbation
-!            CALL RANDOM_NUMBER(RNUM1)
-!            CALL RANDOM_NUMBER(RNUM2)
-!            CU1(I,K,J)=CU1(I,K,J)
-!     &           +CMPLX((RNUM1-0.5d0),(RNUM2-0.5d0))*KICK
-!            CALL RANDOM_NUMBER(RNUM1)
-!            CALL RANDOM_NUMBER(RNUM2)
-!            CU2(I,K,J)=CU2(I,K,J)
-!     &           +CMPLX((RNUM1-0.5d0),(RNUM2-0.5d0))*KICK
-!            CALL RANDOM_NUMBER(RNUM1)
-!            CALL RANDOM_NUMBER(RNUM2)
-!            CU3(I,K,J)=CU3(I,K,J)
-!     &           +CMPLX((RNUM1-0.5d0),(RNUM2-0.5d0))*KICK
-!          END DO
-!          IF (TNKZ.EQ.0) THEN
-! Here, In the 2d case we want to add a kick to the mean in z
-!            K=0
-!            CALL RANDOM_NUMBER(RNUM1)
-!            CALL RANDOM_NUMBER(RNUM2)
-!            CALL RANDOM_NUMBER(RNUM3)
-
-!            IF (IC_TYPE.eq.3) THEN
-!              CU1(I,K,J)=CU1(I,K,J)
-!     &             +(RNUM1-0.5)*KICK*EXP(-(GYF(J)*20.d0)**2.d0)
-!              CU2(I,K,J)=CU2(I,K,J)
-!     &             +(RNUM1-0.5)*KICK*EXP(-(GYF(J)*20.d0)**2.d0)
-!              CU3(I,K,J)=CU3(I,K,J)
-!     &             +(RNUM1-0.5)*KICK*EXP(-(GYF(J)*20.d0)**2.d0)
-!            ELSE
-!              CU1(I,K,J)=CU1(I,K,J)+(RNUM1-0.5)*KICK
-!              CU2(I,K,J)=CU2(I,K,J)+(RNUM2-0.5)*KICK
-!              CU3(I,K,J)=CU3(I,K,J)+(RNUM3-0.5)*KICK
-!            END IF
-!          END IF
-!        END DO
-!      END DO
-
         IF (USE_MPI) THEN
           CALL GHOST_CHAN_MPI
         END IF
-C Apply Boundary conditions to velocity field
+! Apply Boundary conditions to velocity field
         IF (USE_MPI) THEN
           CALL APPLY_BC_VEL_MPI
         ELSE
@@ -197,33 +178,26 @@ C Apply Boundary conditions to velocity field
           CALL APPLY_BC_VEL_UPPER
         END IF
 
-C Remove the divergence of the velocity field
-        CALL REM_DIV_CHAN
+!! Remove the divergence of the velocity field
+!        CALL REM_DIV_CHAN
 
-        IF (USE_MPI) THEN
-          CALL GHOST_CHAN_MPI
-        END IF
+!        IF (USE_MPI) THEN
+!          CALL GHOST_CHAN_MPI
+!        END IF
 
-C Get the pressure from the poisson equation
-!      CALL POISSON_P_CHAN
-! Fix for the pressure
-!      IF (USE_MPI) THEN
-!        CALL GHOST_CHAN_MPI
-!      END IF
-
-C Save various statistics to keep track of the initial condition
-        CALL SAVE_STATS_CHAN(.FALSE.)
+!! Save various statistics to keep track of the initial condition
+!        CALL SAVE_STATS_CHAN(.FALSE.)
 
         RETURN
       END
 
 
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
       SUBROUTINE CREATE_TH_CHAN
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
-C Initialize the scalar fields
-C In this subroutine, you should initialize each scalar field for the
-C particular problem of interest
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+! Initialize the scalar fields
+! In this subroutine, you should initialize each scalar field for the
+! particular problem of interest
 
         INCLUDE 'header'
         INTEGER I,J,K,N
@@ -358,8 +332,29 @@ C particular problem of interest
                 END DO
               END DO
 
-!       ELSE IF (IC_TYPE.eq.5) then
-              !dTdx = 2*(Z0 - z)*f*v0*erf(-x/X1)*e**(-(X0 - x)**2/X1**2 -(Z0 - z)**2/Z1**2)/(Z1**2*alpha*g)
+
+
+            ELSE IF (IC_TYPE.eq.6) THEN
+              X0 = LX/2
+              X1 = 1600
+              Y0 = 0
+              Y1 = 80
+              V0 = 0.4d0
+              DO K=0,NZP-1
+                DO I=0,NXM
+                  DO J=1,NY
+                    vert_comp = EXP(-(GYF(J)-Y0)**2/Y1**2)
+                    AUX1 = (sqrt(pi)*X1*erf(-5000/X1 + GZ(K)/X1) -
+     & sqrt(pi)*X1*erf(-11000/X1 + GZ(K)/X1))
+               AUX0=(Y0-GYF(J))*I_RO*v0*exp(-(Y0-GYF(J))**2/Y1**2)/Y1**2
+                    dBdy = 2e-4 * 25/1000 ! alpha * 25C / km
+                    B_inf = 9.81*(1 + dBdy * GYF(j))
+                    TH(I,K,J,N)=B_inf - AUX1 * AUX0
+                    !TH(I,K,J,N) = B_inf + AUX1
+                  END DO
+                END DO
+              END DO
+
 
 
             ELSE
@@ -378,25 +373,25 @@ C particular problem of interest
       END
 
 
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
       SUBROUTINE CREATE_FLOW_PER
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
         INCLUDE 'header'
         INTEGER I, J, K
         REAL*8 RNUM1,RNUM2,RNUM3
         REAL*8 K0
 
-C For an initial vortex, define the location of the centerline
+! For an initial vortex, define the location of the centerline
         REAL*8 XC(0:NY+1),ZC(0:NY+1)
 
         WRITE(6,*) 'Creating new flow from scratch.'
 
-C Initialize random number generator
+! Initialize random number generator
         CALL RANDOM_SEED
 
         IF (IC_TYPE.eq.0) THEN
-C Initizlize the flow using a Taylor-Green vortex
-C Nondimensionalize with U0 and 1/kappa
+! Initizlize the flow using a Taylor-Green vortex
+! Nondimensionalize with U0 and 1/kappa
           DO J=0,NYM
             DO K=0,NZM
               DO I=0,NXM
@@ -411,7 +406,7 @@ C Nondimensionalize with U0 and 1/kappa
             END DO
           END DO
         ELSE IF (IC_TYPE.eq.1) THEN
-C Start with an ideal vortex centered in the domain
+! Start with an ideal vortex centered in the domain
           DO J=0,NYM
             XC(J)=LX/2.
             ZC(J)=LZ/2.
@@ -487,21 +482,21 @@ C Start with an ideal vortex centered in the domain
 
         RETURN
       END
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
       SUBROUTINE CREATE_TH_PER
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
         INCLUDE 'header'
         INTEGER I,J,K,N
 
-C Note, Since stratification is not permitted in the periodic flow field
-C Any background stratification must be added to the governing equations
+! Note, Since stratification is not permitted in the periodic flow field
+! Any background stratification must be added to the governing equations
 
         DO N=1,N_TH
           IF (CREATE_NEW_TH(N)) THEN
             DO J=0,NYM
               DO K=0,NZM
                 DO I=0,NXM
-C Example: Gaussian patch centered in the domain
+! Example: Gaussian patch centered in the domain
                   TH(I,K,J,N)=EXP(-((GX(I)-LX/2)*10.d0)**2.d0
      &                            -((GY(J)-LY/2)*10.d0)**2.d0
      &                            -((GZ(K)-LZ/2)*10.d0)**2.d0)
@@ -516,17 +511,17 @@ C Example: Gaussian patch centered in the domain
         RETURN
       END
 
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
       SUBROUTINE CREATE_FLOW_DUCT
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
 
         RETURN
       END
 
 
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
       SUBROUTINE CREATE_FLOW_CAV
-C----*|--.---------.---------.---------.---------.---------.---------.-|-------|
+!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
 
         RETURN
       END
